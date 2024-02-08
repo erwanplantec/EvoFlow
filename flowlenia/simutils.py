@@ -140,6 +140,8 @@ class Simulator:
 					o = pickle.load(file)
 				return o
 		files = os.listdir(self.save_pth)
+		files = sorted(files, key=lambda f: int(f.split(".")[0]))
+		print(files)
 		datas = [_load(f"{self.save_pth}/{file}") for file in files]
 		return datas
 
@@ -150,5 +152,6 @@ if __name__ == '__main__':
 	from flowlenia.flowlenia_params import FlowLeniaParams, Config
 	cfg = Config(X=32, Y=32)
 	mdl = FlowLeniaParams(cfg, key=jr.key(2))
-	sim = Simulator(mdl)
+	sim = Simulator(mdl, "../flowlenia_sves_test")
 	sim.simulate(200)
+	sim.load_files()
