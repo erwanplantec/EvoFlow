@@ -4,6 +4,7 @@ import jax
 import jax.numpy as jnp
 import jax.random as jr
 import jax.nn as jnn
+import equinox as eqx
 import numpy as np
 from jaxtyping import PyTree
 
@@ -35,6 +36,7 @@ class TwitchStreamerSimulator:
 
 		key, init_key = jr.split(key)
 		s = self.mdl.initialize(init_key)
+		step_fn = eqx.filter_jit(self.mdl)
 
 		with TwitchBufferedOutputStream(twitch_stream_key=self.stream_key, 
 			width=self.width, height=self.height, fps=self.fps, 
@@ -42,7 +44,7 @@ class TwitchStreamerSimulator:
 			while True:
 				if videostream.get_video_frame_buffer_state() < 30:
 					key, k_ = jr.split(key)
-					s = self.mdl(s, k_)
+					s = step_fn(s, k_)
 					im = self.state_to_img_fn(s)
 					videostream.send_video_frame(np.array(im))
 
