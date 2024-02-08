@@ -43,7 +43,7 @@ class TwitchStreamerSimulator:
 				if videostream.get_video_frame_buffer_state() < 30:
 					key, k_ = jr.split(key)
 					s = self.mdl(s, k_)
-					im = self.state_to_img_fn(s.A)
+					im = self.state_to_img_fn(s)
 					videostream.send_video_frame(np.array(im))
 
 
