@@ -20,19 +20,11 @@ class TwitchStreamerSimulator:
 		verbose: bool=True):
 
 		self.mdl = model
-		self.videostream = TwitchBufferedOutputStream(
-			twitch_stream_key=stream_key, 
-			width=width,
-			height=height,
-			fps=fps,
-			verbose=verbose
-		)
-
-	#-------------------------------------------------------------------
-
-	def stream(self, img):
-
-			self.videostream.send_video_frame(img)
+		self.stream_key = stream_key
+		self.width = width
+		self.height = height
+		self.fps = fps
+		self.verbose = verbose
 
 	#-------------------------------------------------------------------
 
@@ -43,12 +35,16 @@ class TwitchStreamerSimulator:
 		locs = jnp.arange(20) + (cfg.X//2-10)
 		A = s.A.at[jnp.ix_(locs, locs)].set(jr.uniform(init_key, (20, 20, 1)))
 		s = s._replace(A=A)
-		while True:
-			if self.videostream.get_video_frame_buffer_state() < 30:
-				key, k_ = jr.split(key)
-				s = self.mdl(s, k_)
-				im = jnp.ones_like(s.A) * s.A
-				self.stream(np.array(im))
+
+		with TwitchBufferedOutputStream(twitch_stream_key=self.stream_key, 
+			width=self.width, height=self.height, fps=self.fps, 
+			verbose=self.verbose) as videostream:
+			while True:
+				if videostream.get_video_frame_buffer_state() < 30:
+					key, k_ = jr.split(key)
+					s = self.mdl(s, k_)
+					im = jnp.ones_like(s.A) * s.A
+					videostream.send_video_frame(np.array(im))
 
 
 
@@ -68,3 +64,5 @@ if __name__ == '__main__':
 	stream_key = "live_1033351530_Ev8lE3jCu6b58aqQdbo6897Mhv60de"
 
 	streamer = TwitchStreamerSimulator(fl, stream_key=stream_key, width=cfg.X, height=cfg.Y)
+
+	streamer.simulate_and_stream(jr.key(1))
