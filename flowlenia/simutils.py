@@ -141,11 +141,11 @@ class Simulator:
 				return o
 		files = os.listdir(self.save_pth)
 		files = sorted(files, key=lambda f: int(f.split(".")[0]))
-		print(files)
 		datas = [_load(f"{self.save_pth}/{file}") for file in files]
 		return datas
 
 	#-------------------------------------------------------------------
+
 
 
 if __name__ == '__main__':
