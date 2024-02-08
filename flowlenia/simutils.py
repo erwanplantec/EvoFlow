@@ -98,7 +98,7 @@ class Simulator:
 
 		key, key_init = jr.split(key)
 		s0 = self.model.initialize(key_init)
-		s = jax.lax.fori_loop(0, steps, _step, (s0, key))
+		s, _ = jax.lax.fori_loop(0, steps, _step, (s0, key))
 		return s
 
 	#-------------------------------------------------------------------
@@ -122,7 +122,7 @@ class Simulator:
 
 		key, key_init = jr.split(key)
 		s0 = self.model.initialize(key_init)
-		s, S = jax.lax.scan(_step, (s0, key), jnp.arange(steps))
+		[s, _], S = jax.lax.scan(_step, (s0, key), jnp.arange(steps))
 		return s, S
 
 	#-------------------------------------------------------------------
