@@ -129,6 +129,7 @@ class Simulator:
 
 	def load_files(self):
 		""""""
+		assert self.save_pth is not None
 		def _load(pth):
 			if self.zip_files:
 				with gzip.GzipFile(pth, "rb") as file:
@@ -149,6 +150,5 @@ if __name__ == '__main__':
 	from flowlenia.flowlenia_params import FlowLeniaParams, Config
 	cfg = Config(X=32, Y=32)
 	mdl = FlowLeniaParams(cfg, key=jr.key(2))
-	sim = Simulator(mdl, "../flowlenia_saves_test", zip_files=True)
+	sim = Simulator(mdl)
 	sim.simulate(200)
-	data = sim.load_files()
