@@ -1,3 +1,4 @@
+from typing import Callable
 from twitchstream.outputvideo import TwitchBufferedOutputStream
 import jax
 import jax.numpy as jnp
@@ -17,7 +18,8 @@ class TwitchStreamerSimulator:
 		width: int=256,
 		height: int=256,
 		fps=30.,
-		verbose: bool=True):
+		verbose: bool=True,
+		state_to_img_fn: Callable=lambda s: s.A):
 
 		self.mdl = model
 		self.stream_key = stream_key
@@ -25,6 +27,7 @@ class TwitchStreamerSimulator:
 		self.height = height
 		self.fps = fps
 		self.verbose = verbose
+		self.state_to_img_fn = state_to_img_fn
 
 	#-------------------------------------------------------------------
 
@@ -43,7 +46,7 @@ class TwitchStreamerSimulator:
 				if videostream.get_video_frame_buffer_state() < 30:
 					key, k_ = jr.split(key)
 					s = self.mdl(s, k_)
-					im = jnp.ones_like(s.A) * s.A
+					im = self.state_to_img_fn(s.A)
 					videostream.send_video_frame(np.array(im))
 
 
