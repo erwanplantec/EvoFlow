@@ -1,3 +1,4 @@
+from flowlenia.utils import progress_bar_scan as pb_scan, progress_bar_fori as pb_fori
 from typing import Callable, Optional, Tuple, TypeAlias, Any
 import jax
 import jax.numpy as jnp
@@ -80,6 +81,7 @@ class Simulator:
 
 	def simulate(self, steps: int, key: jax.Array=jr.key(1)):
 
+		@pb_fori(steps)
 		def _step(t: int, c: Tuple[State, jax.Array]):
 			# --- sim step
 			s, k = c
@@ -103,6 +105,7 @@ class Simulator:
 
 	def simulate_scan(self, steps: int, key: jax.Array=jr.key(1)):
 		
+		@pb_scan(steps)
 		def _step(c, t):
 			# --- sim step
 			s, k = c
