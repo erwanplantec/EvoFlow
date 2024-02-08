@@ -35,9 +35,6 @@ class TwitchStreamerSimulator:
 
 		key, init_key = jr.split(key)
 		s = self.mdl.initialize(init_key)
-		locs = jnp.arange(20) + (cfg.X//2-10)
-		A = s.A.at[jnp.ix_(locs, locs)].set(jr.uniform(init_key, (20, 20, 1)))
-		s = s._replace(A=A)
 
 		with TwitchBufferedOutputStream(twitch_stream_key=self.stream_key, 
 			width=self.width, height=self.height, fps=self.fps, 
