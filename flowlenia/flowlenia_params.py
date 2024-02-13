@@ -170,7 +170,7 @@ if __name__ == '__main__':
                   [0, 2, 1],
                   [1, 0, 2]])
     c0, c1 = conn_from_matrix(M)
-    cfg = cfg._replace(c0=c0, c1=c1)
+    cfg = cfg._replace(c0=c0, c1=c1, mix_rule="stoch_gene_wise")
     flp = FlowLeniaParams(cfg, key=jr.key(1), callback=partial(beam_mutation, sz=20, p=0.1))
     s = flp.initialize(jr.key(1))
     locs = jnp.arange(20) + (cfg.X//2-10)
