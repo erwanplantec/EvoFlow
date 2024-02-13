@@ -104,7 +104,7 @@ class FlowLeniaParams(eqx.Module):
                      -(self.cfg.dd-self.cfg.sigma), 
                      self.cfg.dd - self.cfg.sigma)
 
-        nA, nP = self.RT(A, P, F) #type:ignore
+        nA, nP = self.RT(A, P, F, key) #type:ignore
 
         state = state._replace(A=nA, P=nP)
 
@@ -119,7 +119,7 @@ class FlowLeniaParams(eqx.Module):
 
     #-------------------------------------------------------------------
 
-    def rollout(self, state: State, key: Optional[jax.Array]=None, 
+    def rollout(self, state: State, key: jax.Array, 
                 steps: int=100)->Tuple[State, State]:
         def _step(c, x):
             s, k = c

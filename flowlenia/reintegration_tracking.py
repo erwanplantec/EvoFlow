@@ -1,5 +1,7 @@
+from typing import Optional
 import jax
 import jax.numpy as jnp
+import jax.random as jr
 from functools import partial
 
 class ReintegrationTracking:
@@ -70,7 +72,7 @@ class ReintegrationTracking:
 
     #-------------------------------------------------------------------
 
-    def _apply_with_hidden(self, A: jax.Array, H: jax.Array, F: jax.Array):
+    def _apply_with_hidden(self, A: jax.Array, H: jax.Array, F: jax.Array, key: Optional[jax.Array]=None):
 
         x, y = jnp.arange(self.SX), jnp.arange(self.SY)
         X, Y = jnp.meshgrid(x, y)
@@ -123,8 +125,9 @@ class ReintegrationTracking:
             nH = jnp.sum(nH * expnA, axis = 0) / (expnA.sum(axis = 0)+1e-10) #avg rule
 
         elif self.mix == "stoch":
+            assert key is not None
             categorical=jax.random.categorical(
-              jax.random.PRNGKey(42), 
+              key, 
               jnp.log(nA.sum(axis=-1, keepdims=True)), 
               axis=0)
             mask=jax.nn.one_hot(categorical,num_classes=(2*self.dd+1)**2,axis=-1)
@@ -133,17 +136,20 @@ class ReintegrationTracking:
             nA = jnp.sum(nA, axis = 0)
 
         elif self.mix == "stoch_gene_wise":
+            assert key is not None
             mask = jnp.concatenate(
-              [jax.nn.one_hot(jax.random.categorical(
-                                                    jax.random.PRNGKey(42), 
-                                                    jnp.log(nA.sum(axis = -1, keepdims = True)), 
-                                                    axis=0),
+              [jax.nn.one_hot(jax.random.categorical(key, 
+                                                     jnp.log(nA.sum(axis = -1, keepdims = True)), 
+                                                     axis=0),
                               num_classes=(2*dd+1)**2,axis=-1)
               for _ in range(H.shape[-1])], 
               axis = 2)
             mask=jnp.transpose(mask,(3,0,1,2)) # (2dd+1**2, x, y, nb_k)
             nH = jnp.sum(nH * mask, axis = 0)
             nA = jnp.sum(nA, axis = 0)
+
+        else:
+            raise ValueError
         
         return nA, nH
 
