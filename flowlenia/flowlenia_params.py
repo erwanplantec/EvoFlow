@@ -24,6 +24,7 @@ class Config(NamedTuple):
     sigma: float=.65
     border: str="wall"
     mix_rule: str="stoch"
+    crossover_rate: Optional[float]=None
 
 class State(NamedTuple):
     """
@@ -66,7 +67,8 @@ class FlowLeniaParams(eqx.Module):
         self.w = jr.uniform(kw, (cfg.k, 3), minval=0.010, maxval=0.50)
         # ---
         self.RT = ReintegrationTracking(cfg.X, cfg.Y, cfg.dt, cfg.dd, cfg.sigma, 
-                                        cfg.border, has_hidden=True, mix=cfg.mix_rule)
+                                        cfg.border, has_hidden=True, mix=cfg.mix_rule,
+                                        crossover_rate=cfg.crossover_rate)
         # ---
         self.clbck = callback
 
@@ -170,9 +172,9 @@ if __name__ == '__main__':
                   [0, 2, 1],
                   [1, 0, 2]])
     c0, c1 = conn_from_matrix(M)
-    cfg = cfg._replace(c0=c0, c1=c1, mix_rule="stoch_gene_wise")
-    flp = FlowLeniaParams(cfg, key=jr.key(1), callback=partial(beam_mutation, sz=20, p=0.1))
-    s = flp.initialize(jr.key(1))
+    cfg = cfg._replace(c0=c0, c1=c1, mix_rule="stoch_w_crossover", crossover_rate=0.001)
+    flp = FlowLeniaParams(cfg, key=jr.key(1011), callback=partial(beam_mutation, sz=20, p=0.1))
+    s = flp.initialize(jr.key(10))
     locs = jnp.arange(20) + (cfg.X//2-10)
     A = s.A.at[jnp.ix_(locs, locs)].set(jr.uniform(jr.key(2), (20, 20, 3)))
     P = s.P.at[jnp.ix_(locs, locs)].set(jnp.ones((20, 20, 9))*jr.uniform(jr.key(111), (1, 1, 9)))
