@@ -137,12 +137,13 @@ class ReintegrationTracking:
 
         elif self.mix == "stoch_gene_wise":
             assert key is not None
+            keys = jr.split(key, H.shape[-1])
             mask = jnp.concatenate(
-              [jax.nn.one_hot(jax.random.categorical(key, 
+              [jax.nn.one_hot(jax.random.categorical(keys[i], 
                                                      jnp.log(nA.sum(axis = -1, keepdims = True)), 
                                                      axis=0),
                               num_classes=(2*dd+1)**2,axis=-1)
-              for _ in range(H.shape[-1])], 
+              for i in range(H.shape[-1])], 
               axis = 2)
             mask=jnp.transpose(mask,(3,0,1,2)) # (2dd+1**2, x, y, nb_k)
             nH = jnp.sum(nH * mask, axis = 0)
