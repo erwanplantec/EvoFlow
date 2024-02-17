@@ -152,7 +152,7 @@ class FlowLeniaParams(eqx.Module):
 #===========================================================================================
 
 
-def beam_mutation(state: State, key: jax.Array, sz: int=20, p: float=0.01):
+def beam_mutation(state, key, sz, p):
     kmut, kloc, kp = jr.split(key, 3)
     P = state.P
     k = P.shape[-1]
@@ -167,12 +167,12 @@ def beam_mutation(state: State, key: jax.Array, sz: int=20, p: float=0.01):
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    cfg = Config(X=128, Y=128, C=3, k=9)
+    cfg = Config(X=64, Y=64, C=3, k=9)
     M = np.array([[2, 1, 0],
                   [0, 2, 1],
                   [1, 0, 2]])
     c0, c1 = conn_from_matrix(M)
-    cfg = cfg._replace(c0=c0, c1=c1, mix_rule="stoch_w_crossover", crossover_rate=0.001)
+    cfg = cfg._replace(c0=c0, c1=c1, mix_rule="argmax", crossover_rate=0.0)
     flp = FlowLeniaParams(cfg, key=jr.key(1011), callback=partial(beam_mutation, sz=20, p=0.1))
     s = flp.initialize(jr.key(10))
     locs = jnp.arange(20) + (cfg.X//2-10)
