@@ -41,20 +41,14 @@ class SummaryData(NamedTuple):
 	AN: float
 	AC: float
 	AP: float
-	maxAN: float
-	maxAC: float
-	maxAP: float
 
 def compute_summary_data(data: RunData, save_pth=None):
 	summary = SummaryData(
 		nuP = data.genome_data.uP.shape[0],
 		nuPt = [d.shape[0] for d in data.genome_data.uPt],
-		AN = data.ea_data.a_n.sum(-1),
-		AC = data.ea_data.a_c.sum(-1),
-		AP = data.ea_data.a_p.sum(-1),
-		maxAN = data.ea_data.a_n.max(),
-		maxAC = data.ea_data.a_c.max(-1),
-		maxAP = data.ea_data.a_p.max(-1),
+		AN = data.ea_data.A_n.sum(-1),
+		AC = data.ea_data.A_c.sum(-1),
+		AP = data.ea_data.A_p.sum(-1),
 		nSt = data.species_data.nSt)
 
 	if save_pth is not None:
