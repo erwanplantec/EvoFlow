@@ -2,6 +2,8 @@ from analysis.genomes import GenomeData, compute_genome_data
 from analysis.species import SpeciesData, compute_species_data
 from analysis.ea import EAData, compute_ea_data
 
+import numpy as np
+
 import os
 try:
 	import _pickle as pickle #type:ignore
@@ -38,17 +40,17 @@ class SummaryData(NamedTuple):
 	# --- Species
 	nSt: list[int]
 	# --- EA
-	AN: float
-	AC: float
-	AP: float
+	AN: np.ndarray
+	AC: np.ndarray
+	AP: np.ndarray
 
 def compute_summary_data(data: RunData, save_pth=None):
 	summary = SummaryData(
 		nuP = data.genome_data.uP.shape[0],
 		nuPt = [d.shape[0] for d in data.genome_data.uPt],
-		AN = data.ea_data.A_n.sum(-1),
-		AC = data.ea_data.A_c.sum(-1),
-		AP = data.ea_data.A_p.sum(-1),
+		AN = data.ea_data.A_n,
+		AC = data.ea_data.A_c,
+		AP = data.ea_data.A_p,
 		nSt = data.species_data.nSt)
 
 	if save_pth is not None:
