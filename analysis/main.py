@@ -45,8 +45,8 @@ class SummaryData(NamedTuple):
 	maxAC: float
 	maxAP: float
 
-def compute_summary_data(data: RunData):
-	return SummaryData(
+def compute_summary_data(data: RunData, save_pth=None):
+	summary = SummaryData(
 		nuP = data.genome_data.uP.shape[0],
 		nuPt = [d.shape[0] for d in data.genome_data.uPt],
 		AN = data.ea_data.a_n.sum(-1),
@@ -56,3 +56,9 @@ def compute_summary_data(data: RunData):
 		maxAC = data.ea_data.a_c.max(-1),
 		maxAP = data.ea_data.a_p.max(-1),
 		nSt = data.species_data.nSt)
+
+	if save_pth is not None:
+		with gzip.GzipFile(save_pth, "wb") as f:
+			pickle.dump(summary, f)
+
+	return summary
