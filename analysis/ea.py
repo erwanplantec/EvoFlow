@@ -7,21 +7,33 @@ from analysis.genomes import GenomeData
 
 
 class EAData(NamedTuple):
-    a_p: np.ndarray
-    a_c: np.ndarray
-    a_n: np.ndarray
-    delta_p: Optional[np.ndarray]=None
-    delta_c: Optional[np.ndarray]=None
-    delta_n: Optional[np.ndarray]=None
+	A_p: np.ndarray
+	A_c: np.ndarray
+	A_n: np.ndarray
+	a_p: Optional[np.ndarray]=None
+	a_c: Optional[np.ndarray]=None
+	a_n: Optional[np.ndarray]=None
+	delta_p: Optional[np.ndarray]=None
+	delta_c: Optional[np.ndarray]=None
+	delta_n: Optional[np.ndarray]=None
 
 
-def compute_ea_data(data: GenomeData, return_deltas: bool=True)->EAData:
+def compute_ea_data(data: GenomeData, return_a: bool=False, return_deltas: bool=False)->EAData:
 	n_species = data.n_uP
 	ts = np.arange(len(data.uPt))
 
-	activities_p = np.zeros((len(ts), n_species), dtype=int)
-	activities_c = np.zeros((len(ts), n_species), dtype=int)
-	activities_n = np.zeros((len(ts), n_species), dtype=int)
+	A_p = np.zeros((len(ts),))
+	A_c = np.zeros((len(ts),))
+	A_n = np.zeros((len(ts),))
+
+	if return_a:
+		activities_p = np.zeros((len(ts), n_species), dtype=int)
+		activities_c = np.zeros((len(ts), n_species), dtype=int)
+		activities_n = np.zeros((len(ts), n_species), dtype=int)
+	else:
+		activities_p = None
+		activities_c = None
+		activities_n = None
 
 	if return_deltas:
 		deltas_p = np.zeros((len(ts), n_species), dtype=int)
@@ -60,15 +72,22 @@ def compute_ea_data(data: GenomeData, return_deltas: bool=True)->EAData:
 		a_p = (a_p + delta_p) * exist
 		a_c = (a_c + delta_c) * exist
 		a_n = (a_n + delta_n) * exist
-		activities_p[t] = a_p
-		activities_c[t] = a_c
-		activities_n[t] = a_n
+
+		A_p[t] = a_p.sum()
+		A_c[t] = a_c.sum()
+		A_n[t] = a_n.sum()
+
+		if return_a:
+			activities_p[t] = a_p #type:ignore
+			activities_c[t] = a_c #type:ignore
+			activities_n[t] = a_n #type:ignore
 		if return_deltas:
 			deltas_p[t] = delta_p #type:ignore
 			deltas_c[t] = delta_c #type:ignore
 			deltas_n[t] = delta_n #type:ignore
 
-	return EAData(a_n=activities_n, a_p=activities_p, a_c=activities_c, 
+	return EAData(A_p=A_p, A_c=A_c, A_n=A_n, 
+				  a_n=activities_n, a_p=activities_p, a_c=activities_c, 
 				  delta_n=deltas_n, delta_p=deltas_p, delta_c=deltas_c)
 
 
