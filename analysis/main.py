@@ -11,7 +11,7 @@ import gzip
 from typing import NamedTuple
 
 class RunData(NamedTuple):
-	gemome_data: GenomeData
+	genome_data: GenomeData
 	species_data: SpeciesData
 	ea_data: EAData
 
@@ -21,7 +21,7 @@ def compute_run_data(data, save_pth=None):
 	species_data = compute_species_data(genome_data)
 	ea_data = compute_ea_data(genome_data)
 
-	run_data = RunData(gemome_data=genome_data,
+	run_data = RunData(genome_data=genome_data,
 				   	   species_data=species_data,
 				   	   ea_data=ea_data)
 
@@ -30,3 +30,29 @@ def compute_run_data(data, save_pth=None):
 			pickle.dump(run_data, f)
 
 	return run_data
+
+class SummaryData(NamedTuple):
+	# --- Genomes
+	nuP: int
+	nuPt: list[int]
+	# --- Species
+	nSt: list[int]
+	# --- EA
+	AN: float
+	AC: float
+	AP: float
+	maxAN: float
+	maxAC: float
+	maxAP: float
+
+def compute_summary_data(data: RunData):
+	return SummaryData(
+		nuP = data.genome_data.uP.shape[0],
+		nuPt = [d.shape[0] for d in data.genome_data.uPt],
+		AN = data.ea_data.a_n.sum(-1),
+		AC = data.ea_data.a_c.sum(-1),
+		AP = data.ea_data.a_p.sum(-1),
+		maxAN = data.ea_data.a_n.max(),
+		maxAC = data.ea_data.a_c.max(-1),
+		maxAP = data.ea_data.a_p.max(-1),
+		nSt = data.species_data.nSt)
