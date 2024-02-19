@@ -10,8 +10,8 @@ from flowlenia.flowlenia_params import (
     beam_mutation)
 
 def death_beam(state, key, sz=20):
-    A, P = state.P, state.A
-    loc = jr.randint(key, (3,), minval=0, maxval=int(P.shape[0]/5)-sz).at[-1].set(0)
+    A, P = state.A, state.P
+    loc = jr.randint(key, (3,), minval=0, maxval=int(P.shape[0])-sz).at[-1].set(0)
     zeroA = jnp.zeros((sz,sz,A.shape[-1]))
     A = jax.lax.dynamic_update_slice(A, zeroA, loc)
     zeroP = jnp.zeros((sz,sz,P.shape[-1]))
@@ -20,13 +20,13 @@ def death_beam(state, key, sz=20):
 
 def birth_beam(state, key, sz=20):
     kA, kP, kloc = jr.split(key, 3)
-    A, P = state.P, state.A
+    A, P = state.A, state.P
     loc = jr.randint(kloc, (3,), minval=0, maxval=P.shape[0]/5-sz).at[-1].set(0)
-    p = jr.normal(kP, (sz,sz,P.shape[-1]))
+    p = jnp.ones((sz,sz,P.shape[-1])) * jr.normal(kP, (1,1,P.shape[-1]))
     a = jr.uniform(kA, (sz,sz,A.shape[-1]))
     A = jax.lax.dynamic_update_slice(A, a, loc)
     P = jax.lax.dynamic_update_slice(P, p, loc)
-    return state._replace(A=A, P=A)
+    return state._replace(A=A, P=P)
 
 class Config(NamedTuple):
     flp_cfg: FLPConfig
@@ -54,6 +54,7 @@ class DissipativeFLP(eqx.Module):
     def __init__(self, cfg: Config, key: jax.Array):
         
         self.flp = FLP(cfg.flp_cfg, key=key)
+        self.cfg = cfg
 
     #-------------------------------------------------------------------
 
@@ -97,6 +98,50 @@ class DissipativeFLP(eqx.Module):
         )
 
         return state
+
+if __name__ == '__main__':
+    import numpy as np
+    from flowlenia.utils import conn_from_matrix
+    from flowlenia.flowlenia_params import Config as FLPConfig
+    from flowlenia.vizutils import display_flp
+    import matplotlib.pyplot as plt
+
+    M = np.array([[5, 5, 5],
+              [5, 5, 5],
+              [5, 5, 5]], dtype = int)
+    C = M.shape[0]
+    k = int(jnp.sum(M))
+    c0, c1 = conn_from_matrix(M)
+
+    flp_cfg = FLPConfig(
+        X=512,
+        Y=512,
+        C=C,
+        k=k,
+        c0=c0,
+        c1=c1,
+        mix_rule="stoch"
+    )
+
+    cfg = Config(
+        flp_cfg = flp_cfg,
+        n_init_species=12,
+        mutation_rate=0.01,
+    )
+
+    mdl = DissipativeFLP(cfg, jr.key(1))
+
+    s = mdl.initialize(jr.key(2))
+    def step(c, x):
+        s, k = c
+        k, _k = jr.split(k)
+        return [mdl(s, _k), k], s
+    _, S = jax.lax.scan(step, [s, jr.key(1)], None, 128)
+    display_flp(S)
+    m = S.A.sum((1,2,3))
+    plt.plot(m); plt.show()
+
+
 
 
 
