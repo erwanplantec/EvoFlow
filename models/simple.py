@@ -33,6 +33,7 @@ class SimpleFLP(eqx.Module):
     def __init__(self, cfg: Config, key: jax.Array):
         
         self.flp = FLP(cfg.flp_cfg, key=key)
+        self.cfg = cfg
 
     #-------------------------------------------------------------------
 
@@ -58,3 +59,45 @@ class SimpleFLP(eqx.Module):
         state = self.flp(state, key_step)
         state = beam_mutation(state, key_mut, sz=self.cfg.beam_size, p=self.cfg.mutation_rate)
         return state
+
+if __name__ == '__main__':
+    import numpy as np
+    from flowlenia.utils import conn_from_matrix
+    from flowlenia.flowlenia_params import Config as FLPConfig
+    from flowlenia.vizutils import display_flp
+    import matplotlib.pyplot as plt
+
+    M = np.array([[5, 5, 5],
+              [5, 5, 5],
+              [5, 5, 5]], dtype = int)
+    C = M.shape[0]
+    k = int(jnp.sum(M))
+    c0, c1 = conn_from_matrix(M)
+
+    flp_cfg = FLPConfig(
+        X=128,
+        Y=128,
+        C=C,
+        k=k,
+        c0=c0,
+        c1=c1,
+        mix_rule="stoch"
+    )
+
+    cfg = Config(
+        flp_cfg = flp_cfg,
+        n_init_species=12,
+        mutation_rate=0.1,
+    )
+
+    mdl = SimpleFLP(cfg, jr.key(1))
+
+    s = mdl.initialize(jr.key(2))
+    def step(c, x):
+        s, k = c
+        k, _k = jr.split(k)
+        return [mdl(s, _k), k], s
+    _, S = jax.lax.scan(step, [s, jr.key(10)], None, 128)
+    display_flp(S)
+    m = S.A.sum((1,2,3))
+    plt.plot(m); plt.show()
