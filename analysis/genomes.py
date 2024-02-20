@@ -68,6 +68,14 @@ def compute_genome_data(data: list):
                    	  uPt_pr=uPt_pr,
                    	  T=T)
 
+def compute_coverage(data: GenomeData, bins: np.ndarray, use_projected: bool=False):
+	"""return coverage of discretized space by genomes at each time step and binned genomes"""
+	pts = data.uPt_pr if use_projected else data.uPt
+	d = pts[0].shape[-1]
+	bin_uPt = [np.digitize(upt, bins) for upt in data.uPt]
+	coverage = [np.unique(bupt).shape[0] / (len(bins)**d) for bupt in bin_uPt]
+	return coverage, bin_uPt
+
 
 def plot_genomes_projection(data: GenomeData, d=2, cmap="rainbow"):
 

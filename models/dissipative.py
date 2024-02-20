@@ -37,7 +37,7 @@ class Config(NamedTuple):
     mutation_rate: float = 0.001
     beam_size: int = 20
     # --- Death/Birth ---
-    death_prob: float = 0.15
+    death_prob: float = 0.01
     birth_prob: float = 0.1
 
 class DissipativeFLP(eqx.Module):

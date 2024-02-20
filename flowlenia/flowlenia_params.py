@@ -15,7 +15,7 @@ class Config(NamedTuple):
     """
     X: int=128
     Y: int=128
-    C: int=1
+    C: int=1 # number of (creature) channels
     c0: list[int]=[0]
     c1: list[list[int]]=[[0]]
     k: int=10
@@ -25,6 +25,7 @@ class Config(NamedTuple):
     border: str="wall"
     mix_rule: str="stoch"
     crossover_rate: Optional[float]=None
+    env_channels: int=0
 
 class State(NamedTuple):
     """
@@ -83,7 +84,7 @@ class FlowLeniaParams(eqx.Module):
     def __call__(self, state: State, key: Optional[jax.Array]=None):
         
         A, P = state.A, state.P
-            # --- Original Lenia ---
+        # --- Original Lenia ---
         fA = jnp.fft.fft2(A, axes=(0,1))  # (x,y,c)
 
         fAk = fA[:, :, self.cfg.c0]  # (x,y,k)
@@ -92,21 +93,24 @@ class FlowLeniaParams(eqx.Module):
 
         U = growth(U, self.m, self.s) * P # (x,y,k)
 
-        U = jnp.dstack([ U[:, :, self.cfg.c1[c]].sum(axis=-1) for c in range(self.cfg.C) ])  # (x,y,c)
+        U = jnp.dstack([ U[:, :, self.cfg.c1[c]].sum(axis=-1) for c in range(self.cfg.C-self.cfg.env_channels)])  # (x,y,c-e)
 
         # --- FLOW ---
 
-        F = sobel(U) #(x, y, 2, c) : Flow
+        F = sobel(U) #(x, y, 2, c-e) : Flow
 
         C_grad = sobel(A.sum(axis = -1, keepdims = True)) #(x, y, 2, 1) : concentration gradient
 
-        alpha = jnp.clip((A[:, :, None, :]/2)**2, .0, 1.)
+        alpha = jnp.clip((A[:, :, None, :self.cfg.C-self.cfg.env_channels]/2)**2, .0, 1.)
 
         F = jnp.clip(F * (1 - alpha) - C_grad * alpha, 
                      -(self.cfg.dd-self.cfg.sigma), 
                      self.cfg.dd - self.cfg.sigma)
 
-        nA, nP = self.RT(A, P, F, key) #type:ignore
+        cA = A[..., :self.cfg.C-self.cfg.env_channels] # creature channels
+        E = A[..., self.cfg.C-self.cfg.env_channels:]  # env channels
+        nA, nP = self.RT(cA, P, F, key) #type:ignore
+        nA = jnp.concatenate([nA,E], axis=-1)
 
         state = state._replace(A=nA, P=nP)
 
@@ -167,19 +171,21 @@ def beam_mutation(state, key, sz, p):
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    cfg = Config(X=64, Y=64, C=3, k=9)
-    M = np.array([[2, 1, 0],
-                  [0, 2, 1],
-                  [1, 0, 2]])
+
+    M = np.array([[2, 2, 0],
+                  [2, 2, 0],
+                  [2, 2, 0]], dtype=int)
+    k = M.sum()
     c0, c1 = conn_from_matrix(M)
+    cfg = Config(X=64, Y=64, C=3, k=k, env_channels=1)
     cfg = cfg._replace(c0=c0, c1=c1, mix_rule="argmax", crossover_rate=0.0)
-    flp = FlowLeniaParams(cfg, key=jr.key(1011), callback=partial(beam_mutation, sz=20, p=0.1))
+    flp = FlowLeniaParams(cfg, key=jr.key(101), callback=partial(beam_mutation, sz=20, p=0.))
     s = flp.initialize(jr.key(10))
     locs = jnp.arange(20) + (cfg.X//2-10)
     A = s.A.at[jnp.ix_(locs, locs)].set(jr.uniform(jr.key(2), (20, 20, 3)))
-    P = s.P.at[jnp.ix_(locs, locs)].set(jnp.ones((20, 20, 9))*jr.uniform(jr.key(111), (1, 1, 9)))
+    P = s.P.at[jnp.ix_(locs, locs)].set(jnp.ones((20, 20, k))*jr.uniform(jr.key(111), (1, 1, k)))
     s = s._replace(A=A, P=P)
     s, S = flp.rollout(s, jr.key(1), 500)
-    display_flp(S)
+    display_flp(S, s2im=lambda s: s.A)
 
 

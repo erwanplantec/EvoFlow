@@ -1,4 +1,5 @@
 import os
+import jax
 os.environ['FFMPEG_BINARY'] = 'ffmpeg'
 import moviepy.editor as mvp
 from moviepy.video.io.ffmpeg_writer import FFMPEG_VideoWriter
@@ -27,12 +28,13 @@ def display_fl(states):
                                     repeat_delay=1000)
     plt.show()
 
-def display_flp(states):
+def display_flp(states, s2im=lambda s: s.P[..., :3] * s.A.sum(-1, keepdims=True)):
     ims = []
     fig, ax = plt.subplots()
     for i in range(100):
-        A, P = states.A[i], states.P[i]
-        im = ax.imshow(P[..., :3] * A.sum(-1, keepdims=True), animated=True)
+        s = jax.tree_map(lambda x: x[i], states)
+        frame = s2im(s)
+        im = ax.imshow(frame, animated=True)
         ims.append([im])
     _ = animation.ArtistAnimation(fig, ims, interval=50, blit=True,
                                     repeat_delay=1000)
