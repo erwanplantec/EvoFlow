@@ -103,7 +103,7 @@ class FoodFLP(eqx.Module):
         dF = jnp.clip(Adig * self.cfg.digest_rate, 0., state.F)
         dA = dF * self.cfg.food_to_matter_ratio
         F = state.F - dF
-        A = state.A + dA[...,None]
+        A = state.A + dA[...,None] - (state.A*self.cfg.decay_rate)
         state = state._replace(A=A, F=F)
         # --- Food add ---
         state = jax.lax.cond(
@@ -146,7 +146,7 @@ if __name__ == '__main__':
         mutation_rate=0.01,
         food_to_matter_ratio=1.,
         decay_rate=.01,
-        food_birth_rate=0.
+        food_birth_rate=0.1
     )
 
     mdl = FoodFLP(cfg, jr.key(121))
