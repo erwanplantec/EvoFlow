@@ -67,7 +67,7 @@ def compute_ea_data(data: GenomeData, return_a: bool=False, return_deltas: bool=
 		e = props[ps]
 		pr = cs / C
 		props[ps] = pr
-		delta_n[ps] = np.where(pr>e, C*((pr-e)**2), 0.)
+		delta_n[ps] = np.where(pr>e, C*(pr-e)**2, 0.)
 		    
 		a_p = (a_p + delta_p) * exist
 		a_c = (a_c + delta_c) * exist

@@ -18,12 +18,14 @@ def death_beam(state, key, sz=20):
     P = jax.lax.dynamic_update_slice(P, zeroP, loc)
     return state._replace(A=A, P=P)
 
-def birth_beam(state, key, sz=20):
+def birth_beam(state, key, q, sz=20):
     kA, kP, kloc = jr.split(key, 3)
     A, P = state.A, state.P
     loc = jr.randint(kloc, (3,), minval=0, maxval=P.shape[0]/5-sz).at[-1].set(0)
+    #loc = jnp.array([10, 10, 0], dtype=int)
     p = jnp.ones((sz,sz,P.shape[-1])) * jr.normal(kP, (1,1,P.shape[-1]))
-    a = jr.uniform(kA, (sz,sz,A.shape[-1]))
+    c = q / (sz**2 * 0.5)
+    a = jr.uniform(kA, (sz,sz,A.shape[-1])) * c
     dA = jax.lax.dynamic_update_slice(jnp.zeros_like(A), a, loc)
     A = A + dA
     P = jax.lax.dynamic_update_slice(P, p, loc)
@@ -38,8 +40,7 @@ class Config(NamedTuple):
     mutation_rate: float = 0.001
     beam_size: int = 20
     # --- Death/Birth ---
-    death_prob: float = 0.01
-    birth_prob: float = 0.1
+    beam_prob: float = 0.01
 
 class DissipativeFLP(eqx.Module):
     
@@ -81,19 +82,19 @@ class DissipativeFLP(eqx.Module):
         key_step, key_rm, key_add = jr.split(key, 3)
         state = self.flp(state, key_step)
         state = beam_mutation(state, key, sz=self.cfg.beam_size, p=self.cfg.mutation_rate)
-        # --- Remove ---
+
+        def remove_and_add(state, key):
+            kr, ka = jr.split(key)
+            new_state = death_beam(s, kr)
+            delta = (state.A - new_state.A).sum((0,1))
+            state = birth_beam(new_state, ka, delta)
+            return state
+
+        # --- Remove and add ---
         k1, k2 = jr.split(key_rm)
         state = jax.lax.cond(
-            jr.uniform(k1) < self.cfg.death_prob,
-            lambda s, k: death_beam(s, k),
-            lambda s, k: s,
-            state, k2
-        )
-        # --- Add ---
-        k1, k2 = jr.split(key_add)
-        state = jax.lax.cond(
-            jr.uniform(k1) < self.cfg.death_prob,
-            lambda s, k: birth_beam(s, k),
+            jr.uniform(k1) < self.cfg.beam_prob,
+            lambda s, k: remove_and_add(s, k),
             lambda s, k: s,
             state, k2
         )
@@ -115,8 +116,8 @@ if __name__ == '__main__':
     c0, c1 = conn_from_matrix(M)
 
     flp_cfg = FLPConfig(
-        X=512,
-        Y=512,
+        X=64,
+        Y=64,
         C=C,
         k=k,
         c0=c0,
@@ -128,6 +129,7 @@ if __name__ == '__main__':
         flp_cfg = flp_cfg,
         n_init_species=12,
         mutation_rate=0.01,
+        beam_prob=0.1
     )
 
     mdl = DissipativeFLP(cfg, jr.key(1))
