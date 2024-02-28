@@ -24,7 +24,8 @@ def birth_beam(state, key, sz=20):
     loc = jr.randint(kloc, (3,), minval=0, maxval=P.shape[0]/5-sz).at[-1].set(0)
     p = jnp.ones((sz,sz,P.shape[-1])) * jr.normal(kP, (1,1,P.shape[-1]))
     a = jr.uniform(kA, (sz,sz,A.shape[-1]))
-    A = jax.lax.dynamic_update_slice(A, a, loc)
+    dA = jax.lax.dynamic_update_slice(jnp.zeros_like(A), a, loc)
+    A = A + dA
     P = jax.lax.dynamic_update_slice(P, p, loc)
     return state._replace(A=A, P=P)
 

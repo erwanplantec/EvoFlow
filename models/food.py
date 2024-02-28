@@ -104,6 +104,7 @@ class FoodFLP(eqx.Module):
         dA = dF * self.cfg.food_to_matter_ratio
         F = state.F - dF
         A = state.A + dA[...,None] - (state.A*self.cfg.decay_rate)
+        A = jnp.where(A.sum(-1)<1e-3, 0., A)
         state = state._replace(A=A, F=F)
         # --- Food add ---
         state = jax.lax.cond(

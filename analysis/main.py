@@ -37,6 +37,7 @@ class SummaryData(NamedTuple):
 	# --- Genomes
 	nuP: int
 	nuPt: list[int]
+	mPt: list
 	# --- Species
 	nSt: list[int]
 	# --- EA
@@ -48,6 +49,7 @@ def compute_summary_data(data: RunData, save_pth=None):
 	summary = SummaryData(
 		nuP = data.genome_data.uP.shape[0],
 		nuPt = [d.shape[0] for d in data.genome_data.uPt],
+		mPt=data.genome_data.aPt,
 		AN = data.ea_data.A_n,
 		AC = data.ea_data.A_c,
 		AP = data.ea_data.A_p,
