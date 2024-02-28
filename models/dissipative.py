@@ -85,7 +85,7 @@ class DissipativeFLP(eqx.Module):
 
         def remove_and_add(state, key):
             kr, ka = jr.split(key)
-            new_state = death_beam(s, kr)
+            new_state = death_beam(state, kr)
             delta = (state.A - new_state.A).sum((0,1))
             state = birth_beam(new_state, ka, delta)
             return state
